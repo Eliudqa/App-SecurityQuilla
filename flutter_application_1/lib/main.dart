@@ -33,6 +33,11 @@ class _SecurityQuillaHomeState extends State<SecurityQuillaHome> {
   final String token = 'miToken123';       // <- debe coincidir con el token en el ESP
   final Duration timeout = Duration(seconds: 20);
 
+  final _ctrl1 = TextEditingController();
+  final _ctrl2 = TextEditingController();
+
+  bool showForm = false;
+
   bool _loading = false;
 
   // Helper: mostrar feedback rápido
@@ -120,16 +125,23 @@ class _SecurityQuillaHomeState extends State<SecurityQuillaHome> {
 }
 
 Future<void> openWhatsapp() async {
-  const String phoneNumber = '+34694264806'; // Reemplaza con el número de teléfono
+  const String phoneNumber = '+34694264806';
   const String message = 'I allow callmebot to send me messages';
-  final Uri url = Uri.parse('https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');
+
+  final Uri url = Uri.parse(
+    'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}'
+  );
 
   if (await canLaunchUrl(url)) {
-    await launchUrl(url);
+    await launchUrl(
+      url,
+      mode: LaunchMode.externalApplication, // <--- IMPORTANTE
+    );
   } else {
-    throw 'No se pudo abrir WhatsApp. ¿Está instalado en el dispositivo?';
+    throw 'No se pudo abrir WhatsApp';
   }
 }
+
 
   // Funciones específicas para cada botón
   Future<void> _changeWifi() async {
@@ -174,11 +186,46 @@ Future<void> openWhatsapp() async {
               ),
               SizedBox(height: 30),
               ElevatedButton(
-                onPressed: _loading ? null : openWhatsapp,
-                child: Text('Contactar por WhatsApp'),
-              ),
+              onPressed: _loading ? null : () async {
+              await openWhatsapp();            // 1) Abrimos WhatsApp
+              setState(() => showForm = true); // 2) Mostramos formulario
+            },
+            child: Text('Contactar por WhatsApp'),
+      ),
               SizedBox(height: 30),
+              if (showForm) ...[
+  SizedBox(height: 20),
+  TextField(
+    controller: _ctrl1,
+    decoration: InputDecoration(
+      labelText: "Ingresa tu numero",
+      border: OutlineInputBorder(),
+    ),
+  ),
+  SizedBox(height: 16),
+  TextField(
+    controller: _ctrl2,
+    decoration: InputDecoration(
+      labelText: "Ingresa tu apikey",
+      border: OutlineInputBorder(),
+    ),
+  ),
+  SizedBox(height: 20),
+  ElevatedButton(
+    onPressed: _loading ? null : () async {
+      final d1 = Uri.encodeComponent(_ctrl1.text);
+      final d2 = Uri.encodeComponent(_ctrl2.text);
+      await _sendGet("/config?dato1=$d1&dato2=$d2");
+
+      // cerrar formulario luego de enviar
+      setState(() => showForm = false);
+    },
+    child: Text("Enviar al ESP32"),
+  ),
+
+
               if (_loading) CircularProgressIndicator(),
+            ],
             ],
           ),
         ),
