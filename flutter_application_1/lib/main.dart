@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 
 void main() {
@@ -28,7 +29,7 @@ class SecurityQuillaHome extends StatefulWidget {
 
 class _SecurityQuillaHomeState extends State<SecurityQuillaHome> {
   // --- CONFIGURA ESTAS VARIABLES ---
-  final String espIp = '10.239.120.242';     // <- cambia por la IP real del ESP32
+  final String espHost = 'alarmaesp.local';     // <- cambia por la IP real del ESP32
   final String token = 'miToken123';       // <- debe coincidir con el token en el ESP
   final Duration timeout = Duration(seconds: 20);
 
@@ -41,10 +42,9 @@ class _SecurityQuillaHomeState extends State<SecurityQuillaHome> {
       SnackBar(content: Text(msg), duration: Duration(seconds: 2)),
     );
   }
-
  Future<void> _sendPost(String path) async {
   setState(() => _loading = true);
-  final uri = Uri.parse('http://$espIp$path');
+  final uri = Uri.parse('http://$espHost$path');
   try {
     final response = await http
         .post(
@@ -82,9 +82,11 @@ class _SecurityQuillaHomeState extends State<SecurityQuillaHome> {
 
 
 
+
+
   Future<void> _sendGet(String path) async {
   setState(() => _loading = true);
-  final uri = Uri.parse('http://$espIp$path');
+  final uri = Uri.parse('http://$espHost$path');
   try {
     final response = await http
         .get(
@@ -117,7 +119,17 @@ class _SecurityQuillaHomeState extends State<SecurityQuillaHome> {
   }
 }
 
+Future<void> openWhatsapp() async {
+  const String phoneNumber = '+34694264806'; // Reemplaza con el número de teléfono
+  const String message = 'I allow callmebot to send me messages';
+  final Uri url = Uri.parse('https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');
 
+  if (await canLaunchUrl(url)) {
+    await launchUrl(url);
+  } else {
+    throw 'No se pudo abrir WhatsApp. ¿Está instalado en el dispositivo?';
+  }
+}
 
   // Funciones específicas para cada botón
   Future<void> _changeWifi() async {
@@ -159,6 +171,11 @@ class _SecurityQuillaHomeState extends State<SecurityQuillaHome> {
               ElevatedButton(
                 onPressed: _loading ? null : _disableAlarm,
                 child: Text('Desactivar Alarma'),
+              ),
+              SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: _loading ? null : openWhatsapp,
+                child: Text('Contactar por WhatsApp'),
               ),
               SizedBox(height: 30),
               if (_loading) CircularProgressIndicator(),
